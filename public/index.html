@@ -75,6 +75,12 @@
         </form>
         <div id="wordFeedback" class="feedback" aria-live="polite">Aguarde a bomba chegar até você...</div>
         <div id="gameMessage" class="game-message">A partida vai começar!</div>
+        <div id="powerPanel" class="power-panel">
+          <div class="power-title">⚡ SEU PODER</div>
+          <div id="myPower" class="my-power">Nenhum poder no momento</div>
+          <div class="power-actions"><select id="powerTarget" aria-label="Escolha um rival"></select><button id="usePowerBtn" class="secondary" type="button" disabled>USAR PODER</button></div>
+          <small>Escudo é automático. Tempo extra só funciona com a bomba; sabotagem afeta o próximo fusível de um rival.</small>
+        </div>
       </div>
       <aside class="panel scoreboard">
         <div class="section-head"><h3>PLACAR AO VIVO</h3><span class="live-tag">LIVE</span></div>
@@ -91,7 +97,7 @@
   </section>
   <div id="toast" class="toast"></div>
 </main>
-<footer>UNITEC • INFORMÁTICA <span>APRENDA JOGANDO</span></footer>
+<footer>UNITEC • INFORMÁTICA <span>APRENDA JOGANDO</span><div class="creator-credit">Criado por <strong>Guilherme Almeida</strong></div></footer>
 <script src="/client.js"></script>
 </body>
 </html>

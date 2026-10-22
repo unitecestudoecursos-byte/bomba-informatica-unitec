@@ -32,3 +32,10 @@ Jogo multiplayer de digitação para até 20 alunos, com sala por código, bomba
 - O servidor guarda as salas em memória. Reiniciar a aplicação encerra as partidas em andamento.
 - Para uso em aula, publique numa hospedagem confiável e teste com alguns dispositivos antes de usar com a turma toda.
 - A lista de palavras fica no array `WORDS` em `server.js`. O sistema ignora acentos, espaços e pontuação na resposta, para facilitar palavras como “PLACA MÃE”.
+
+
+## Atualização Unitec Battle
+- Banco ampliado com centenas de termos de informática, Windows, pacote Office, hardware, redes, segurança e programação.
+- Dificuldade aumenta a cada 10 palavras corretas no total da sala.
+- Poderes com painel de uso: escudo automático, tempo extra e sabotagem.
+- Créditos no rodapé: Guilherme Almeida.

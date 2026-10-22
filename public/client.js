@@ -25,6 +25,16 @@ async function joinRoom(){
   $("roomCode").textContent=r.code; $("gameRoomCode").textContent=r.code;
   showSection("lobby");
 }
+
+const powerNames = { shield: "🛡️ Escudo — protege de uma explosão", time: "⏱️ Tempo extra — +4 segundos quando a bomba estiver com você", jam: "⚡ Sabotagem — reduz 3 segundos do próximo fusível de um rival" };
+$("usePowerBtn").addEventListener("click", async()=>{
+  const targetId = $("powerTarget").value;
+  const r = await emitAck("power:use", { targetId });
+  toast(r?.ok ? (r.message || "Poder utilizado!") : (r?.error || "Não foi possível usar o poder."));
+});
+socket.on("power:earned", data=>toast("✨ PODER CONQUISTADO: " + (data.label || data.power) + "!"));
+socket.on("round:up", data=>toast("🚀 NÍVEL " + data.round + "! As palavras ficaram mais difíceis."));
+
 $("createBtn").addEventListener("click",createRoom);
 $("joinBtn").addEventListener("click",joinRoom);
 $("playerName").addEventListener("keydown",e=>{if(e.key==="Enter")createRoom()});
@@ -57,6 +67,15 @@ socket.on("room:update",state=>{
     $("aliveCount").textContent=state.players.filter(p=>p.alive).length;
     const me=state.players.find(p=>p.id===socket.id);
     $("myScore").textContent=me?.score??0;
+    const myPower = state.powers?.find(p=>p.id===socket.id)?.power || null;
+    $("myPower").textContent = myPower ? (powerNames[myPower] || myPower) : "Nenhum poder no momento — continue acertando para ganhar um!";
+    const canUse = !!myPower && myPower !== "shield" && (myPower !== "time" || state.bombHolderId === socket.id);
+    $("usePowerBtn").disabled = !canUse;
+    $("usePowerBtn").textContent = myPower === "shield" ? "ESCUDO AUTOMÁTICO" : "USAR PODER";
+    const currentTarget = $("powerTarget").value;
+    $("powerTarget").innerHTML = state.players.filter(p=>p.alive && p.id!==socket.id).map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
+    if ([...$("powerTarget").options].some(o=>o.value===currentTarget)) $("powerTarget").value=currentTarget;
+    $("powerTarget").classList.toggle("hidden", myPower !== "jam");
     $("wordPrompt").textContent=state.currentWord||"…";
     $("gameMessage").textContent=state.message||"";
     const holding=state.bombHolderId===socket.id;
