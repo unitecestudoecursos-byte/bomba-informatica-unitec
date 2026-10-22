@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bomba da Informática | Unitec Battle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+<div class="bg-grid"></div>
+<header class="topbar">
+  <div class="brand-mark">U<span>•</span></div>
+  <div><div class="brand">UNITEC <span>BATTLE</span></div><div class="subtitle">BOMBA DA INFORMÁTICA</div></div>
+  <div class="online"><i></i> MULTIPLAYER ONLINE</div>
+</header>
+<main>
+  <section id="entry" class="panel entry-panel">
+    <div class="eyebrow">⚡ DESAFIO DE DIGITAÇÃO • ATÉ 20 JOGADORES</div>
+    <h1>A BOMBA<br><span>É SUA?</span></h1>
+    <p class="intro">Digite a palavra de informática, sobreviva à contagem e deixe a bomba longe de você.</p>
+    <label for="playerName">SEU NOME / APELIDO</label>
+    <input id="playerName" maxlength="18" placeholder="Ex.: CyberNinja" autocomplete="nickname">
+    <div class="entry-actions">
+      <button id="createBtn" class="primary">CRIAR SALA <span>↗</span></button>
+      <div class="join-row"><input id="roomCodeInput" maxlength="5" placeholder="CÓDIGO"><button id="joinBtn" class="secondary">ENTRAR</button></div>
+    </div>
+    <div id="entryError" class="error" role="alert"></div>
+    <div class="feature-row"><span>💣 FUSÍVEL ALEATÓRIO</span><span>⌨ DIGITAÇÃO</span><span>🏆 RANKING</span></div>
+  </section>
+
+  <section id="lobby" class="hidden">
+    <div class="room-head panel">
+      <div><div class="eyebrow">SALA DE BATALHA</div><h2>CÓDIGO: <span id="roomCode">-----</span></h2><p>Compartilhe esse código com a turma.</p></div>
+      <button id="copyCode" class="secondary">COPIAR CÓDIGO</button>
+    </div>
+    <div class="lobby-grid">
+      <div class="panel">
+        <div class="section-head"><h3>JOGADORES</h3><span id="playerCount" class="count">0 / 20</span></div>
+        <div id="lobbyPlayers" class="players-grid"></div>
+        <div id="hostArea" class="host-area hidden"><button id="startBtn" class="primary wide">INICIAR PARTIDA ▶</button><small>É preciso ter pelo menos 2 jogadores.</small></div>
+        <p id="waitingText" class="muted">Aguardando o professor iniciar...</p>
+      </div>
+      <div class="panel rules">
+        <div class="eyebrow">COMO JOGAR</div><h3>RÁPIDO. CERTO. SOBREVIVA.</h3>
+        <p>1. Digite a palavra exatamente como aparece.</p>
+        <p>2. Ao acertar, a bomba passa automaticamente para outro jogador.</p>
+        <p>3. Quando o tempo acabar, quem estiver com a bomba é eliminado.</p>
+        <p>4. O último sobrevivente vence!</p>
+        <div class="rule-bomb">💣 <span>Não pisque.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="game" class="hidden">
+    <div class="game-top">
+      <div class="stat panel"><small>RODADA</small><strong id="roundNum">01</strong></div>
+      <div class="stat panel"><small>SOBREVIVENTES</small><strong id="aliveCount">20</strong></div>
+      <div class="stat panel"><small>SEU SCORE</small><strong id="myScore">0</strong></div>
+      <div class="room-tag">SALA <b id="gameRoomCode">-----</b></div>
+    </div>
+    <div class="game-grid">
+      <div class="panel arena">
+        <div class="arena-label"><span class="pulse"></span> BOMBA ATIVA</div>
+        <div id="bomb" class="bomb">💣</div>
+        <div id="timerBar" class="timer-bar"><div id="timerFill"></div></div>
+        <div id="timerText" class="timer-text">--.--</div>
+        <div class="word-label">DIGITE ESTA PALAVRA</div>
+        <div id="wordPrompt" class="word-prompt">TECLADO</div>
+        <form id="wordForm" class="word-form">
+          <input id="wordInput" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="DIGITE AQUI..." maxlength="40">
+          <button class="primary" type="submit">PASSAR 💥</button>
+        </form>
+        <div id="wordFeedback" class="feedback" aria-live="polite">Aguarde a bomba chegar até você...</div>
+        <div id="gameMessage" class="game-message">A partida vai começar!</div>
+      </div>
+      <aside class="panel scoreboard">
+        <div class="section-head"><h3>PLACAR AO VIVO</h3><span class="live-tag">LIVE</span></div>
+        <div id="scorePlayers" class="score-players"></div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="finished" class="panel finished hidden">
+    <div class="eyebrow">PARTIDA FINALIZADA</div><div class="trophy">🏆</div><h1 id="winnerTitle">CAMPEÃO!</h1>
+    <p id="winnerMessage">Parabéns!</p>
+    <h3>RANKING FINAL</h3><div id="finalRanking" class="final-ranking"></div>
+    <button id="backBtn" class="primary">VOLTAR AO INÍCIO</button>
+  </section>
+  <div id="toast" class="toast"></div>
+</main>
+<footer>UNITEC • INFORMÁTICA <span>APRENDA JOGANDO</span></footer>
+<script src="/client.js"></script>
+</body>
+</html>
