@@ -1,40 +1,16 @@
-# Bomba da Informática — Unitec Battle
+# UNITEC Game Center
 
-Jogo educativo de digitação da UNITEC com modo multiplayer para até 20 alunos e treinamento individual (single player).
+Plataforma integrada com dois jogos: Bomba da Digitação (`/bomba`) e Show de Milhões (`/milhao`). A página inicial `/` permite escolher o jogo.
 
-## Requisitos
-- Node.js 18 ou superior
-- Uma plataforma/servidor com suporte a Node.js e WebSocket (por exemplo, Render, Railway ou servidor próprio)
+## Publicar no Render
+- Build Command: `npm install`
+- Start Command: `npm start`
+- Node.js 18 ou superior.
 
-## Executar localmente
-1. Instale o Node.js.
-2. Extraia o ZIP e abra um terminal na pasta `bomba_informatica_unitec`.
-3. Execute:
-   ```bash
-   npm install
-   npm start
-   ```
-4. Abra `http://localhost:3000` no computador que estiver executando o servidor.
-5. Para testar em outros dispositivos na mesma rede, abra `http://IP-DO-COMPUTADOR:3000`.
-   Para jogar pela internet, publique a aplicação em uma hospedagem Node.js e compartilhe a URL pública.
+O projeto usa um único servidor HTTP e dois namespaces Socket.IO isolados (`/bomba` e `/milhao`) para impedir conflito entre eventos dos jogos.
 
-## Novidades
-- **Single Player:** treinamento em três níveis, com orientação de postura e prática de palavras e frases.
-- **Reações na sala:** alunos podem enviar emojis para todos os participantes enquanto aguardam o início. Há limite de envio para evitar spam.
-- **Glossário durante a partida:** cada palavra do multiplayer mostra uma explicação curta de seu significado.
-- O treinamento individual funciona no navegador e não precisa criar uma sala.
-
-## Como jogar
-1. O professor cria a sala e compartilha o código de 5 caracteres.
-2. Os alunos entram com nome/apelido.
-3. O criador inicia quando houver pelo menos 2 jogadores.
-4. Quem recebe a bomba digita a palavra mostrada. Ao acertar, o servidor passa a bomba automaticamente para outro sobrevivente.
-5. O fusível tem duração aleatória entre 9 e 19 segundos. Quando acaba, o portador é eliminado.
-6. A partida termina quando resta um sobrevivente.
-
-## Importante
-- A partida é sincronizada pelo servidor; o cronômetro exibido no navegador é apenas visual, e o servidor decide quando a bomba explode.
-- Esta é uma primeira versão funcional. Ela não tem persistência de estatísticas entre partidas, login, moderação ou reconexão de jogadores.
-- O servidor guarda as salas em memória. Reiniciar a aplicação encerra as partidas em andamento.
-- Para uso em aula, publique numa hospedagem confiável e teste com alguns dispositivos antes de usar com a turma toda.
-- A lista de palavras fica no array `WORDS` em `server.js`. O sistema ignora acentos, espaços e pontuação na resposta, para facilitar palavras como “PLACA MÃE”.
+## Rotas
+- `/` central de jogos
+- `/bomba` Bomba da Digitação (multiplayer e treinamento individual)
+- `/milhao` Show de Milhões
+- `/health` verificação de funcionamento

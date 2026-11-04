@@ -1,8 +1,7 @@
 services:
   - type: web
-    name: bomba-informatica-unitec
-    runtime: node
+    name: unitec-game-center
+    env: node
     plan: free
     buildCommand: npm install
     startCommand: npm start
-    healthCheckPath: /health
