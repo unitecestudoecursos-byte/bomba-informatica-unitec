@@ -1,4 +1,4 @@
-const socket = io();
+const socket = io("/bomba");
 const $ = id => document.getElementById(id);
 const sections = ["entry","lobby","game","single","finished"];
 let roomState = null;
@@ -42,6 +42,17 @@ $("wordForm").addEventListener("submit",async e=>{
 });
 $("backBtn").addEventListener("click",()=>location.reload());
 socket.on("connect",()=>{myId=socket.id;});
+let visualCountdownTimer=null;
+function startVisualCountdown(endsAt){
+  const overlay=$("countdownOverlay"); if(!overlay)return;
+  if(visualCountdownTimer)clearInterval(visualCountdownTimer);
+  overlay.classList.remove("hidden");
+  visualCountdownTimer=setInterval(()=>{
+    const left=Math.max(0,Math.ceil((endsAt-Date.now())/1000));
+    overlay.querySelector("strong").textContent=left>0?String(left):"GO!";
+    if(left<=0){clearInterval(visualCountdownTimer);visualCountdownTimer=null;setTimeout(()=>overlay.classList.add("hidden"),550);}
+  },100);
+}
 socket.on("room:update",state=>{
   roomState=state;
   $("roomCode").textContent=state.code;$("gameRoomCode").textContent=state.code;
@@ -51,6 +62,7 @@ socket.on("room:update",state=>{
   $("waitingText").classList.toggle("hidden",state.status!=="lobby"||host);
   $("lobbyPlayers").innerHTML=state.players.map(p=>`<div class="player-chip ${p.id===socket.id?"me":""}">${esc(p.name)}${p.id===socket.id?'<span class="mini">VOCÊ</span>':""}</div>`).join("");
   if(state.status==="lobby")showSection("lobby");
+  if(state.status==="countdown"){ showSection("game"); startVisualCountdown(state.countdownEndsAt); }
   if(state.status==="playing"){
     showSection("game");
     $("roundNum").textContent=String(state.round).padStart(2,"0");
@@ -143,7 +155,7 @@ const training = [
  {level:"NÍVEL 2",title:"Palavras de informática",tip:"Agora pratique palavras comuns da informática. Preste atenção em cada letra e nos espaços.",tasks:["INTERNET","MONITOR","ARQUIVO","PASTA","IMPRESSORA","PROGRAMA"]},
  {level:"NÍVEL 3",title:"Frases do dia a dia",tip:"Chegou a hora de digitar frases. Respeite os espaços e a pontuação.",tasks:["EU GOSTO DE INFORMATICA.","O TECLADO SERVE PARA DIGITAR.","SALVE SEUS ARQUIVOS EM UMA PASTA.","A INTERNET CONECTA PESSOAS E COMPUTADORES."]}
 ];
-let trainingIndex=0, trainingCorrect=0, trainingAttempts=0, trainingPassed=false;
+let trainingIndex=0, trainingCorrect=0, trainingAttempts=0, trainingPassed=false, singleSeconds=15, singleClock=null, singleCountdown=null;
 function normalizedTyping(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\s+/g," ").trim();}
 function currentTask(){let flat=training.flatMap((level,li)=>level.tasks.map((task,ti)=>({level,li,ti,task})));return flat[trainingIndex];}
 function renderTraining(){
@@ -153,12 +165,23 @@ function renderTraining(){
   $("lessonTitle").textContent=item.level.title;
   $("lessonTip").textContent=item.level.tip;
   $("singlePrompt").textContent=item.task;
-  $("singleInput").value="";$("singleInput").disabled=false;$("singleInput").focus();
+  $("singleExplanation").textContent=wordMeaning(item.task.replace(/[.]/g,"")) || "Pratique a digitação com atenção às letras e aos espaços.";
+  $("singleInput").value="";$("singleInput").disabled=true;
+  startSingleRound();
   $("singleFeedback").textContent="Digite o texto e pressione Conferir.";
   $("singleFeedback").className="feedback";
   $("singleNext").classList.add("hidden");
   $("singleForm").classList.remove("hidden");
   $("lessonProgress").style.width=(trainingIndex/training.flatMap(x=>x.tasks).length*100)+"%";
+}
+function stopSingleClocks(){if(singleClock)clearInterval(singleClock);if(singleCountdown)clearInterval(singleCountdown);singleClock=null;singleCountdown=null;}
+function startSingleRound(){
+  stopSingleClocks(); singleSeconds=15; $("singleTimer").textContent="15s"; $("singleTimerFill").style.width="100%";
+  const overlay=$("countdownOverlay"); overlay.classList.remove("hidden"); let count=3; overlay.querySelector("strong").textContent="3";
+  singleCountdown=setInterval(()=>{count--;overlay.querySelector("strong").textContent=count>0?String(count):"GO!";
+    if(count<=0){clearInterval(singleCountdown);singleCountdown=null;setTimeout(()=>overlay.classList.add("hidden"),450);$("singleInput").disabled=false;$("singleInput").focus();
+      singleClock=setInterval(()=>{singleSeconds--;$("singleTimer").textContent=singleSeconds+"s";$("singleTimerFill").style.width=(singleSeconds/15*100)+"%";if(singleSeconds<=5)$("singleTimer").classList.add("urgent");if(singleSeconds<=0){stopSingleClocks();$("singleInput").disabled=true;trainingAttempts++;updateTrainingStats();$("singleFeedback").textContent="⏰ Tempo esgotado! Vamos tentar novamente.";$("singleFeedback").className="feedback bad";$("singleNext").textContent="TENTAR NOVAMENTE ↻";$("singleNext").classList.remove("hidden");$("singleForm").classList.add("hidden");}} ,1000);
+    }},1000);
 }
 function updateTrainingStats(){
   $("singleCorrect").textContent=trainingCorrect;
@@ -175,7 +198,7 @@ $("singleForm").addEventListener("submit",e=>{
   const item=currentTask();if(!item)return;
   trainingAttempts++;
   if(normalizedTyping($("singleInput").value)===normalizedTyping(item.task)){
-    trainingCorrect++;trainingPassed=true;
+    trainingCorrect++;trainingPassed=true;stopSingleClocks();
     $("singleFeedback").textContent="Muito bem! Texto digitado corretamente. 🎉";
     $("singleFeedback").className="feedback good";
     $("singleInput").disabled=true;
@@ -190,6 +213,7 @@ $("singleForm").addEventListener("submit",e=>{
 });
 $("singleNext").addEventListener("click",()=>{
   if(trainingIndex>=training.flatMap(x=>x.tasks).length){beginTraining();return;}
+  if(!trainingPassed){$("singleForm").classList.remove("hidden");trainingPassed=false;renderTraining();return;}
   trainingIndex++;trainingPassed=false;renderTraining();
 });
 
