@@ -1,6 +1,6 @@
 const socket = io();
 const $ = id => document.getElementById(id);
-const sections = ["entry","lobby","game","finished"];
+const sections = ["entry","lobby","game","single","finished"];
 let roomState = null;
 let myId = null;
 let timerFrame = null;
@@ -25,16 +25,6 @@ async function joinRoom(){
   $("roomCode").textContent=r.code; $("gameRoomCode").textContent=r.code;
   showSection("lobby");
 }
-
-const powerNames = { shield: "🛡️ Escudo — protege de uma explosão", time: "⏱️ Tempo extra — +4 segundos quando a bomba estiver com você", jam: "⚡ Sabotagem — reduz 3 segundos do próximo fusível de um rival" };
-$("usePowerBtn").addEventListener("click", async()=>{
-  const targetId = $("powerTarget").value;
-  const r = await emitAck("power:use", { targetId });
-  toast(r?.ok ? (r.message || "Poder utilizado!") : (r?.error || "Não foi possível usar o poder."));
-});
-socket.on("power:earned", data=>toast("✨ PODER CONQUISTADO: " + (data.label || data.power) + "!"));
-socket.on("round:up", data=>toast("🚀 NÍVEL " + data.round + "! As palavras ficaram mais difíceis."));
-
 $("createBtn").addEventListener("click",createRoom);
 $("joinBtn").addEventListener("click",joinRoom);
 $("playerName").addEventListener("keydown",e=>{if(e.key==="Enter")createRoom()});
@@ -67,16 +57,8 @@ socket.on("room:update",state=>{
     $("aliveCount").textContent=state.players.filter(p=>p.alive).length;
     const me=state.players.find(p=>p.id===socket.id);
     $("myScore").textContent=me?.score??0;
-    const myPower = state.powers?.find(p=>p.id===socket.id)?.power || null;
-    $("myPower").textContent = myPower ? (powerNames[myPower] || myPower) : "Nenhum poder no momento — continue acertando para ganhar um!";
-    const canUse = !!myPower && myPower !== "shield" && (myPower !== "time" || state.bombHolderId === socket.id);
-    $("usePowerBtn").disabled = !canUse;
-    $("usePowerBtn").textContent = myPower === "shield" ? "ESCUDO AUTOMÁTICO" : "USAR PODER";
-    const currentTarget = $("powerTarget").value;
-    $("powerTarget").innerHTML = state.players.filter(p=>p.alive && p.id!==socket.id).map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
-    if ([...$("powerTarget").options].some(o=>o.value===currentTarget)) $("powerTarget").value=currentTarget;
-    $("powerTarget").classList.toggle("hidden", myPower !== "jam");
     $("wordPrompt").textContent=state.currentWord||"…";
+    $("wordExplanation").textContent=wordMeaning(state.currentWord);
     $("gameMessage").textContent=state.message||"";
     const holding=state.bombHolderId===socket.id;
     $("wordInput").disabled=!holding;
@@ -100,6 +82,117 @@ function renderFinished(state){
   $("finalRanking").innerHTML=sorted.map((p,i)=>`<div class="final-row"><span>${["🥇","🥈","🥉"][i]||"#"+(i+1)} ${esc(p.name)}</span><b>${p.score} pts · ${p.correct} acertos</b></div>`).join("");
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+// Glossário rápido: explicações curtas para aprender durante a partida.
+const meanings = {
+ "MOUSE":"Mouse: dispositivo usado para movimentar o ponteiro e selecionar itens na tela.",
+ "TECLADO":"Teclado: dispositivo com teclas usado para digitar letras, números e comandos.",
+ "MONITOR":"Monitor: tela que exibe as imagens e informações do computador.",
+ "WINDOWS":"Windows: sistema operacional que permite usar programas e organizar arquivos.",
+ "PASTA":"Pasta: local usado para guardar e organizar arquivos no computador.",
+ "ARQUIVO":"Arquivo: documento, imagem, vídeo ou outro conteúdo salvo no computador.",
+ "INTERNET":"Internet: rede mundial que conecta computadores e permite acessar sites e serviços.",
+ "HARDWARE":"Hardware: parte física do computador, como teclado, memória e monitor.",
+ "SOFTWARE":"Software: programas e sistemas que funcionam no computador.",
+ "NAVEGADOR":"Navegador: programa usado para acessar páginas e sites da internet.",
+ "PROCESSADOR":"Processador: componente que executa instruções e realiza cálculos.",
+ "MEMORIA":"Memória RAM: espaço temporário usado pelos programas enquanto estão abertos.",
+ "PLANILHA":"Planilha: documento organizado em linhas e colunas, muito usado para cálculos.",
+ "ATALHO":"Atalho: combinação de teclas ou ícone que permite executar uma ação rapidamente.",
+ "PERIFERICO":"Periférico: equipamento conectado ao computador, como impressora, mouse ou teclado.",
+ "PLACA MAE":"Placa-mãe: placa principal que conecta os componentes do computador.",
+ "SISTEMA":"Sistema operacional: programa principal que controla o computador e seus recursos.",
+ "DOWNLOAD":"Download: ação de baixar um arquivo da internet para seu dispositivo.",
+ "SEGURANCA":"Segurança digital: cuidados para proteger dados, contas e equipamentos.",
+ "COMPATIBILIDADE":"Compatibilidade: capacidade de programas e equipamentos funcionarem juntos.",
+ "ALGORITMO":"Algoritmo: sequência organizada de passos para resolver um problema.",
+ "FIREWALL":"Firewall: recurso que ajuda a controlar conexões e bloquear acessos indesejados.",
+ "BANCO DE DADOS":"Banco de dados: conjunto organizado de informações que podem ser consultadas.",
+ "ARMAZENAMENTO":"Armazenamento: local onde os dados ficam guardados, como HD, SSD ou pen drive.",
+ "GABINETE":"Gabinete: estrutura que abriga e protege as peças internas do computador.",
+ "IMPRESSORA":"Impressora: equipamento que coloca textos e imagens no papel.",
+ "RESOLUCAO":"Resolução: quantidade de detalhes exibidos em uma imagem ou tela.",
+ "PROGRAMACAO":"Programação: criação de instruções que dizem ao computador o que fazer."
+};
+function wordMeaning(word){
+  const key=String(word||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+  return meanings[key] || "Conceito de informática: observe a palavra e pense em como ela é usada no dia a dia com computadores.";
+}
+
+// Reações aparecem para todos os participantes conectados à sala.
+$("emojiBar").addEventListener("click",e=>{
+  const btn=e.target.closest("button[data-emoji]");
+  if(btn) socket.emit("lobby:emoji",{emoji:btn.dataset.emoji});
+});
+socket.on("lobby:emoji",data=>{
+  const feed=$("lobbyReactions");
+  const item=document.createElement("div");
+  item.className="reaction-item";
+  item.textContent=data.emoji+" ";
+  const name=document.createElement("b");
+  name.textContent=data.playerName;
+  item.appendChild(name);
+  feed.appendChild(item);
+  while(feed.children.length>16)feed.removeChild(feed.firstChild);
+  setTimeout(()=>item.remove(),9000);
+});
+
+// Treinamento individual com instruções e desafios em três níveis.
+const training = [
+ {level:"NÍVEL 1",title:"Conhecendo o teclado",tip:"Comece devagar. Mantenha os dedos relaxados e procure olhar para a tela enquanto digita.",tasks:["CASA","TECLADO","MOUSE","ESCOLA","COMPUTADOR"]},
+ {level:"NÍVEL 2",title:"Palavras de informática",tip:"Agora pratique palavras comuns da informática. Preste atenção em cada letra e nos espaços.",tasks:["INTERNET","MONITOR","ARQUIVO","PASTA","IMPRESSORA","PROGRAMA"]},
+ {level:"NÍVEL 3",title:"Frases do dia a dia",tip:"Chegou a hora de digitar frases. Respeite os espaços e a pontuação.",tasks:["EU GOSTO DE INFORMATICA.","O TECLADO SERVE PARA DIGITAR.","SALVE SEUS ARQUIVOS EM UMA PASTA.","A INTERNET CONECTA PESSOAS E COMPUTADORES."]}
+];
+let trainingIndex=0, trainingCorrect=0, trainingAttempts=0, trainingPassed=false;
+function normalizedTyping(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\s+/g," ").trim();}
+function currentTask(){let flat=training.flatMap((level,li)=>level.tasks.map((task,ti)=>({level,li,ti,task})));return flat[trainingIndex];}
+function renderTraining(){
+  const item=currentTask();
+  if(!item){$("lessonLevel").textContent="CONCLUÍDO";$("lessonTitle").textContent="Treinamento concluído!";$("lessonTip").textContent="Parabéns! Você completou todos os desafios. Continue praticando para ganhar velocidade e precisão.";$("singlePrompt").textContent="🏆 PARABÉNS!";$("singleInput").disabled=true;$("singleForm").classList.add("hidden");$("singleNext").classList.remove("hidden");$("singleNext").textContent="RECOMEÇAR TREINAMENTO";$("lessonProgress").style.width="100%";return;}
+  $("lessonLevel").textContent=item.level.level;
+  $("lessonTitle").textContent=item.level.title;
+  $("lessonTip").textContent=item.level.tip;
+  $("singlePrompt").textContent=item.task;
+  $("singleInput").value="";$("singleInput").disabled=false;$("singleInput").focus();
+  $("singleFeedback").textContent="Digite o texto e pressione Conferir.";
+  $("singleFeedback").className="feedback";
+  $("singleNext").classList.add("hidden");
+  $("singleForm").classList.remove("hidden");
+  $("lessonProgress").style.width=(trainingIndex/training.flatMap(x=>x.tasks).length*100)+"%";
+}
+function updateTrainingStats(){
+  $("singleCorrect").textContent=trainingCorrect;
+  $("singleAttempts").textContent=trainingAttempts;
+  $("singleAccuracy").textContent=(trainingAttempts?Math.round(trainingCorrect/trainingAttempts*100):0)+"%";
+}
+function beginTraining(){trainingIndex=0;trainingCorrect=0;trainingAttempts=0;trainingPassed=false;updateTrainingStats();showSection("single");renderTraining();}
+$("singleBtn").addEventListener("click",beginTraining);
+$("singleBack").addEventListener("click",()=>showSection("entry"));
+$("restartSingle").addEventListener("click",beginTraining);
+$("singleForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  if(trainingPassed)return;
+  const item=currentTask();if(!item)return;
+  trainingAttempts++;
+  if(normalizedTyping($("singleInput").value)===normalizedTyping(item.task)){
+    trainingCorrect++;trainingPassed=true;
+    $("singleFeedback").textContent="Muito bem! Texto digitado corretamente. 🎉";
+    $("singleFeedback").className="feedback good";
+    $("singleInput").disabled=true;
+    $("singleNext").classList.remove("hidden");
+    $("singleNext").textContent=trainingIndex===training.flatMap(x=>x.tasks).length-1?"FINALIZAR TREINAMENTO":"PRÓXIMO DESAFIO →";
+  }else{
+    $("singleFeedback").textContent="Ainda não está igual. Confira as letras e tente novamente.";
+    $("singleFeedback").className="feedback bad";
+    $("singleInput").select();
+  }
+  updateTrainingStats();
+});
+$("singleNext").addEventListener("click",()=>{
+  if(trainingIndex>=training.flatMap(x=>x.tasks).length){beginTraining();return;}
+  trainingIndex++;trainingPassed=false;renderTraining();
+});
+
 // Client display timer is visual only; server owns the actual deadline.
 function animateTimer(){
   if(roomState?.status==="playing"&&roomState.deadline){
