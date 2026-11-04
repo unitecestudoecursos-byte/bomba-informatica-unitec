@@ -155,7 +155,7 @@ const training = [
  {level:"NÍVEL 2",title:"Palavras de informática",tip:"Agora pratique palavras comuns da informática. Preste atenção em cada letra e nos espaços.",tasks:["INTERNET","MONITOR","ARQUIVO","PASTA","IMPRESSORA","PROGRAMA"]},
  {level:"NÍVEL 3",title:"Frases do dia a dia",tip:"Chegou a hora de digitar frases. Respeite os espaços e a pontuação.",tasks:["EU GOSTO DE INFORMATICA.","O TECLADO SERVE PARA DIGITAR.","SALVE SEUS ARQUIVOS EM UMA PASTA.","A INTERNET CONECTA PESSOAS E COMPUTADORES."]}
 ];
-let trainingIndex=0, trainingCorrect=0, trainingAttempts=0, trainingPassed=false, singleSeconds=15, singleClock=null, singleCountdown=null;
+let trainingIndex=0, trainingCorrect=0, trainingAttempts=0, trainingPassed=false, singleSeconds=15, singleClock=null, singleCountdown=null, singleIntroPending=true;
 function normalizedTyping(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\s+/g," ").trim();}
 function currentTask(){let flat=training.flatMap((level,li)=>level.tasks.map((task,ti)=>({level,li,ti,task})));return flat[trainingIndex];}
 function renderTraining(){
@@ -167,7 +167,8 @@ function renderTraining(){
   $("singlePrompt").textContent=item.task;
   $("singleExplanation").textContent=wordMeaning(item.task.replace(/[.]/g,"")) || "Pratique a digitação com atenção às letras e aos espaços.";
   $("singleInput").value="";$("singleInput").disabled=true;
-  startSingleRound();
+  const showIntro=singleIntroPending; singleIntroPending=false;
+  startSingleRound(showIntro);
   $("singleFeedback").textContent="Digite o texto e pressione Conferir.";
   $("singleFeedback").className="feedback";
   $("singleNext").classList.add("hidden");
@@ -175,20 +176,28 @@ function renderTraining(){
   $("lessonProgress").style.width=(trainingIndex/training.flatMap(x=>x.tasks).length*100)+"%";
 }
 function stopSingleClocks(){if(singleClock)clearInterval(singleClock);if(singleCountdown)clearInterval(singleCountdown);singleClock=null;singleCountdown=null;}
-function startSingleRound(){
-  stopSingleClocks(); singleSeconds=15; $("singleTimer").textContent="15s"; $("singleTimerFill").style.width="100%";
-  const overlay=$("countdownOverlay"); overlay.classList.remove("hidden"); let count=3; overlay.querySelector("strong").textContent="3";
-  singleCountdown=setInterval(()=>{count--;overlay.querySelector("strong").textContent=count>0?String(count):"GO!";
-    if(count<=0){clearInterval(singleCountdown);singleCountdown=null;setTimeout(()=>overlay.classList.add("hidden"),450);$("singleInput").disabled=false;$("singleInput").focus();
-      singleClock=setInterval(()=>{singleSeconds--;$("singleTimer").textContent=singleSeconds+"s";$("singleTimerFill").style.width=(singleSeconds/15*100)+"%";if(singleSeconds<=5)$("singleTimer").classList.add("urgent");if(singleSeconds<=0){stopSingleClocks();$("singleInput").disabled=true;trainingAttempts++;updateTrainingStats();$("singleFeedback").textContent="⏰ Tempo esgotado! Vamos tentar novamente.";$("singleFeedback").className="feedback bad";$("singleNext").textContent="TENTAR NOVAMENTE ↻";$("singleNext").classList.remove("hidden");$("singleForm").classList.add("hidden");}} ,1000);
-    }},1000);
+function startSingleRound(showCountdown=false){
+  stopSingleClocks(); singleSeconds=15; $("singleTimer").textContent="15s"; $("singleTimerFill").style.width="100%"; $("singleTimer").classList.remove("urgent");
+  const overlay=$("countdownOverlay");
+  const launchClock=()=>{
+    $("singleInput").disabled=false;$("singleInput").focus();
+    singleClock=setInterval(()=>{singleSeconds--;$("singleTimer").textContent=singleSeconds+"s";$("singleTimerFill").style.width=(singleSeconds/15*100)+"%";if(singleSeconds<=5)$("singleTimer").classList.add("urgent");if(singleSeconds<=0){stopSingleClocks();$("singleInput").disabled=true;trainingAttempts++;updateTrainingStats();$("singleFeedback").textContent="⏰ Tempo esgotado! Vamos tentar novamente.";$("singleFeedback").className="feedback bad";$("singleNext").textContent="TENTAR NOVAMENTE ↻";$("singleNext").classList.remove("hidden");$("singleForm").classList.add("hidden");}},1000);
+  };
+  if(showCountdown){
+    overlay.classList.remove("hidden"); let count=3; overlay.querySelector("strong").textContent="3";
+    singleCountdown=setInterval(()=>{count--;overlay.querySelector("strong").textContent=count>0?String(count):"GO!";
+      if(count<=0){clearInterval(singleCountdown);singleCountdown=null;setTimeout(()=>overlay.classList.add("hidden"),450);launchClock();}
+    },1000);
+  } else {
+    overlay.classList.add("hidden"); launchClock();
+  }
 }
 function updateTrainingStats(){
   $("singleCorrect").textContent=trainingCorrect;
   $("singleAttempts").textContent=trainingAttempts;
   $("singleAccuracy").textContent=(trainingAttempts?Math.round(trainingCorrect/trainingAttempts*100):0)+"%";
 }
-function beginTraining(){trainingIndex=0;trainingCorrect=0;trainingAttempts=0;trainingPassed=false;updateTrainingStats();showSection("single");renderTraining();}
+function beginTraining(){trainingIndex=0;trainingCorrect=0;trainingAttempts=0;trainingPassed=false;singleIntroPending=true;updateTrainingStats();showSection("single");renderTraining();}
 $("singleBtn").addEventListener("click",beginTraining);
 $("singleBack").addEventListener("click",()=>showSection("entry"));
 $("restartSingle").addEventListener("click",beginTraining);
