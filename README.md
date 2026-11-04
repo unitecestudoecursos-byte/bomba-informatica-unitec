@@ -1,6 +1,6 @@
 # Bomba da Informática — Unitec Battle
 
-Jogo multiplayer de digitação para até 20 alunos, com sala por código, bomba com tempo aleatório, eliminação e ranking.
+Jogo educativo de digitação da UNITEC com modo multiplayer para até 20 alunos e treinamento individual (single player).
 
 ## Requisitos
 - Node.js 18 ou superior
@@ -18,6 +18,12 @@ Jogo multiplayer de digitação para até 20 alunos, com sala por código, bomba
 5. Para testar em outros dispositivos na mesma rede, abra `http://IP-DO-COMPUTADOR:3000`.
    Para jogar pela internet, publique a aplicação em uma hospedagem Node.js e compartilhe a URL pública.
 
+## Novidades
+- **Single Player:** treinamento em três níveis, com orientação de postura e prática de palavras e frases.
+- **Reações na sala:** alunos podem enviar emojis para todos os participantes enquanto aguardam o início. Há limite de envio para evitar spam.
+- **Glossário durante a partida:** cada palavra do multiplayer mostra uma explicação curta de seu significado.
+- O treinamento individual funciona no navegador e não precisa criar uma sala.
+
 ## Como jogar
 1. O professor cria a sala e compartilha o código de 5 caracteres.
 2. Os alunos entram com nome/apelido.
@@ -32,10 +38,3 @@ Jogo multiplayer de digitação para até 20 alunos, com sala por código, bomba
 - O servidor guarda as salas em memória. Reiniciar a aplicação encerra as partidas em andamento.
 - Para uso em aula, publique numa hospedagem confiável e teste com alguns dispositivos antes de usar com a turma toda.
 - A lista de palavras fica no array `WORDS` em `server.js`. O sistema ignora acentos, espaços e pontuação na resposta, para facilitar palavras como “PLACA MÃE”.
-
-
-## Atualização Unitec Battle
-- Banco ampliado com centenas de termos de informática, Windows, pacote Office, hardware, redes, segurança e programação.
-- Dificuldade aumenta a cada 10 palavras corretas no total da sala.
-- Poderes com painel de uso: escudo automático, tempo extra e sabotagem.
-- Créditos no rodapé: Guilherme Almeida.
